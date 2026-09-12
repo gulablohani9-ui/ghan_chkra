@@ -2,63 +2,71 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>Ghan Chakra - Professional Report</title>
+    <title>Ghan Chakra - Professional HD Report</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #e9ecef; }
-        #app { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h2 { border-bottom: 2px solid #333; padding-bottom: 10px; text-align: center;}
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-        .input-group label { font-weight: bold; }
-        input { width: 90%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;}
-        .btn-group { text-align: center; margin-top: 20px; }
+        #app { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
+        h2, h3 { border-bottom: 2px solid #333; padding-bottom: 5px; margin-top: 30px;}
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .input-group label { font-weight: bold; font-size: 14px;}
+        input { width: 85%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;}
         button { background: #007bff; color: white; padding: 10px 25px; border: none; font-size: 16px; cursor: pointer; border-radius: 4px; margin: 5px;}
         button.back { background: #dc3545; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 12px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px;}
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
         th { background: #333; color: white; }
-        canvas { max-width: 100%; height: auto; border: 1px solid #ddd; display: block; margin: 0 auto;}
-        .report-section { display: none; }
-        
-        /* PDF Fix: Is class se PDF image ko beech me se nahi kategi */
-        .page-break { page-break-inside: avoid; margin-top: 40px; }
+        .html2pdf__page-break { height: 0; page-break-before: always; margin: 0; padding: 0; }
+        canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; border: 1px solid #ddd; }
+        #report-screen { display: none; }
     </style>
 </head>
 <body>
     <div id="app">
         <div id="input-screen">
-            <h2>Planets Degree Entry (0-360°)</h2>
-            <div class="grid" id="inputs"></div>
-            <div class="btn-group">
-                <button onclick="generateReport()">Generate Report</button>
+            <h2>1. Enter Houses (1-12) Degrees</h2>
+            <div class="grid" id="inputs-houses"></div>
+            
+            <h2>2. Enter Planets Degrees</h2>
+            <div class="grid" id="inputs-planets"></div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="generateReport()">Generate HD Report</button>
             </div>
         </div>
 
-        <div id="report-screen" class="report-section">
-            <div class="btn-group">
-                <button onclick="downloadPDF()">Download PDF</button>
-                <button class="back" onclick="location.reload()">Back to Entry</button>
+        <div id="report-screen">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button onclick="downloadPDF()">Download HD PDF</button>
+                <button class="back" onclick="location.reload()">Back</button>
             </div>
             
             <div id="pdf-content" style="padding: 20px; background: white;">
-                <h2>Nakshatra & Planet Placement</h2>
-                <table id="result-table">
-                    <thead>
-                        <tr>
-                            <th>Planet</th>
-                            <th>Degree</th>
-                            <th>Rashi</th>
-                            <th>Nakshatra No.</th>
-                            <th>Pada (1-4)</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-                
-                <!-- Page Break Wrapper to stop PDF cutting -->
-                <div class="page-break">
-                    <h2>Ghan Chakra Overlay</h2>
-                    <canvas id="chakraCanvas" width="800" height="800"></canvas>
+                <div id="page1">
+                    <h2>Planet & House Base Details</h2>
+                    <table id="basic-table">
+                        <thead>
+                            <tr><th>Name</th><th>Type</th><th>Degree</th><th>Nakshatra No.</th><th>Pada</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+
+                    <h2>Nakshatra Occupancy Report</h2>
+                    <table id="nakshatra-table">
+                        <thead>
+                            <tr><th>Nakshatra No.</th><th>Occupied By (Planets & Houses)</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Force Page Break here so image never cuts -->
+                <div class="html2pdf__page-break"></div>
+
+                <div id="page2" style="padding-top: 20px;">
+                    <h2 style="text-align:center;">Ghan Chakra Overlay</h2>
+                    <!-- Canvas is large for HD rendering -->
+                    <canvas id="chakraCanvas" width="1600" height="1600"></canvas>
                 </div>
             </div>
         </div>
@@ -66,39 +74,60 @@
 
     <script>
         const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
-        const rashiNames = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+        const houses = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'H10', 'H11', 'H12'];
         
-        const inputsDiv = document.getElementById('inputs');
+        const hDiv = document.getElementById('inputs-houses');
+        houses.forEach(h => {
+            hDiv.innerHTML += `<div class="input-group"><label>${h}</label><br><input type="number" id="${h}" placeholder="0-360"></div>`;
+        });
+
+        const pDiv = document.getElementById('inputs-planets');
         planets.forEach(p => {
-            inputsDiv.innerHTML += `<div class="input-group"><label>${p}</label><br><input type="number" id="${p}" placeholder="Enter 0 to 360" max="360" min="0" required></div>`;
+            pDiv.innerHTML += `<div class="input-group"><label>${p}</label><br><input type="number" id="${p}" placeholder="0-360"></div>`;
         });
 
         function generateReport() {
             document.getElementById('input-screen').style.display = 'none';
             document.getElementById('report-screen').style.display = 'block';
             
-            const tbody = document.querySelector('#result-table tbody');
-            tbody.innerHTML = '';
-            const planetData = [];
+            const basicTbody = document.querySelector('#basic-table tbody');
+            const nakTbody = document.querySelector('#nakshatra-table tbody');
+            basicTbody.innerHTML = '';
+            nakTbody.innerHTML = '';
             
-            planets.forEach(p => {
-                let deg = parseFloat(document.getElementById(p).value);
-                if (!isNaN(deg)) {
-                    planetData.push({ name: p, degree: deg });
-                    
-                    let rashiIndex = Math.floor(deg / 30);
-                    let rashi = rashiNames[rashiIndex] || 'N/A';
+            const allData = [];
+            const nakshatraGroups = {};
+
+            // Collect Data
+            [...houses, ...planets].forEach(name => {
+                let val = document.getElementById(name).value;
+                if (val !== "") {
+                    let deg = parseFloat(val);
+                    let type = houses.includes(name) ? 'House' : 'Planet';
                     let nakshatra = Math.floor(deg / 13.3333) + 1;
                     let pada = Math.floor((deg % 13.3333) / 3.3333) + 1;
                     
-                    tbody.innerHTML += `<tr><td><b>${p}</b></td><td>${deg}°</td><td>${rashi}</td><td>${nakshatra}</td><td>${pada}</td></tr>`;
+                    allData.push({ name, deg, type, nakshatra, pada });
+                    
+                    // Grouping for Nakshatra Report
+                    if(!nakshatraGroups[nakshatra]) nakshatraGroups[nakshatra] = [];
+                    nakshatraGroups[nakshatra].push(`${name} (Pada ${pada})`);
+                    
+                    basicTbody.innerHTML += `<tr><td><b>${name}</b></td><td>${type}</td><td>${deg}°</td><td>${nakshatra}</td><td>${pada}</td></tr>`;
                 }
             });
+
+            // Fill Nakshatra Group Table
+            for(let i=1; i<=27; i++) {
+                if(nakshatraGroups[i]) {
+                    nakTbody.innerHTML += `<tr><td><b>Nakshatra ${i}</b></td><td>${nakshatraGroups[i].join(', ')}</td></tr>`;
+                }
+            }
             
-            drawChakra(planetData);
+            drawChakra(allData);
         }
 
-        function drawChakra(planetData) {
+        function drawChakra(data) {
             const canvas = document.getElementById('chakraCanvas');
             const ctx = canvas.getContext('2d');
             
@@ -106,36 +135,37 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             const img = new Image();
-            img.src = 'chakra1.png'; 
+            img.src = 'chakra1.png'; // Ensure exact file name on GitHub
             
             img.onload = () => {
-                // Image draw karein
-                ctx.drawImage(img, 40, 40, canvas.width - 80, canvas.height - 80);
+                // Image thodi choti draw hogi taaki text margins me aa sake
+                ctx.drawImage(img, 150, 150, canvas.width - 300, canvas.height - 300);
                 
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
-                const lineRadius = canvas.width / 2.3; // Line ki length
+                const lineRadius = (canvas.width / 2) - 160; 
                 
-                planetData.forEach(item => {
-                    let radians = (item.degree - 90) * (Math.PI / 180);
+                data.forEach(item => {
+                    let radians = (item.deg - 90) * (Math.PI / 180);
                     let destX = centerX + lineRadius * Math.cos(radians);
                     let destY = centerY + lineRadius * Math.sin(radians);
                     
-                    // Line draw karein
-                    ctx.lineWidth = 3;
-                    ctx.strokeStyle = '#e74c3c'; 
+                    // Draw Line
+                    ctx.lineWidth = 4;
+                    // Blue for Houses, Red for Planets
+                    ctx.strokeStyle = item.type === 'House' ? '#0000FF' : '#FF0000'; 
                     ctx.beginPath();
                     ctx.moveTo(centerX, centerY);
                     ctx.lineTo(destX, destY);
                     ctx.stroke();
 
-                    // Planet ka naam draw karein
-                    let textRadius = lineRadius + 15; // Text thoda aage hoga
+                    // Draw Text
+                    let textRadius = lineRadius + 30; // Push text outside the line
                     let textX = centerX + textRadius * Math.cos(radians);
                     let textY = centerY + textRadius * Math.sin(radians);
                     
-                    ctx.fillStyle = '#0000bb'; // Blue text color
-                    ctx.font = 'bold 16px Arial';
+                    ctx.fillStyle = item.type === 'House' ? '#0000FF' : '#FF0000';
+                    ctx.font = 'bold 28px Arial'; // Large font for HD Canvas
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(item.name, textX, textY);
@@ -147,9 +177,10 @@
             const element = document.getElementById('pdf-content');
             html2pdf().from(element).set({
                 margin: [10, 10, 10, 10],
-                filename: 'Ghan-Chakra-Report.pdf',
+                filename: 'HD-Ghan-Chakra-Report.pdf',
                 image: { type: 'jpeg', quality: 1.0 },
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                // Scale 3 ensures HD quality output
+                html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             }).save();
         }
