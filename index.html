@@ -17,8 +17,11 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ccc; padding: 12px; text-align: center; }
         th { background: #333; color: white; }
-        canvas { max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 20px; display: block; margin: 0 auto;}
+        canvas { max-width: 100%; height: auto; border: 1px solid #ddd; display: block; margin: 0 auto;}
         .report-section { display: none; }
+        
+        /* PDF Fix: Is class se PDF image ko beech me se nahi kategi */
+        .page-break { page-break-inside: avoid; margin-top: 40px; }
     </style>
 </head>
 <body>
@@ -52,8 +55,11 @@
                     <tbody></tbody>
                 </table>
                 
-                <h2 style="margin-top:40px;">Ghan Chakra Overlay</h2>
-                <canvas id="chakraCanvas" width="800" height="800"></canvas>
+                <!-- Page Break Wrapper to stop PDF cutting -->
+                <div class="page-break">
+                    <h2>Ghan Chakra Overlay</h2>
+                    <canvas id="chakraCanvas" width="800" height="800"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -73,24 +79,26 @@
             
             const tbody = document.querySelector('#result-table tbody');
             tbody.innerHTML = '';
-            const degrees = [];
+            const planetData = [];
             
             planets.forEach(p => {
-                let deg = parseFloat(document.getElementById(p).value) || 0;
-                degrees.push(deg);
-                
-                let rashiIndex = Math.floor(deg / 30);
-                let rashi = rashiNames[rashiIndex] || 'N/A';
-                let nakshatra = Math.floor(deg / 13.3333) + 1;
-                let pada = Math.floor((deg % 13.3333) / 3.3333) + 1;
-                
-                tbody.innerHTML += `<tr><td><b>${p}</b></td><td>${deg}°</td><td>${rashi}</td><td>${nakshatra}</td><td>${pada}</td></tr>`;
+                let deg = parseFloat(document.getElementById(p).value);
+                if (!isNaN(deg)) {
+                    planetData.push({ name: p, degree: deg });
+                    
+                    let rashiIndex = Math.floor(deg / 30);
+                    let rashi = rashiNames[rashiIndex] || 'N/A';
+                    let nakshatra = Math.floor(deg / 13.3333) + 1;
+                    let pada = Math.floor((deg % 13.3333) / 3.3333) + 1;
+                    
+                    tbody.innerHTML += `<tr><td><b>${p}</b></td><td>${deg}°</td><td>${rashi}</td><td>${nakshatra}</td><td>${pada}</td></tr>`;
+                }
             });
             
-            drawChakra(degrees);
+            drawChakra(planetData);
         }
 
-        function drawChakra(degrees) {
+        function drawChakra(planetData) {
             const canvas = document.getElementById('chakraCanvas');
             const ctx = canvas.getContext('2d');
             
@@ -98,28 +106,39 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             const img = new Image();
-            // YAHAN APNI IMAGE KA NAAM THEEK WAISA HI RAKHEIN JAISA GITHUB PAR UPLOAD KIYA HAI
             img.src = 'chakra1.png'; 
             
             img.onload = () => {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                // Image draw karein
+                ctx.drawImage(img, 40, 40, canvas.width - 80, canvas.height - 80);
                 
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
-                const radius = canvas.width / 2.1; 
+                const lineRadius = canvas.width / 2.3; // Line ki length
                 
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#e74c3c'; // Red line color
-                
-                degrees.forEach(deg => {
-                    let radians = (deg - 90) * (Math.PI / 180);
-                    let destX = centerX + radius * Math.cos(radians);
-                    let destY = centerY + radius * Math.sin(radians);
+                planetData.forEach(item => {
+                    let radians = (item.degree - 90) * (Math.PI / 180);
+                    let destX = centerX + lineRadius * Math.cos(radians);
+                    let destY = centerY + lineRadius * Math.sin(radians);
                     
+                    // Line draw karein
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#e74c3c'; 
                     ctx.beginPath();
                     ctx.moveTo(centerX, centerY);
                     ctx.lineTo(destX, destY);
                     ctx.stroke();
+
+                    // Planet ka naam draw karein
+                    let textRadius = lineRadius + 15; // Text thoda aage hoga
+                    let textX = centerX + textRadius * Math.cos(radians);
+                    let textY = centerY + textRadius * Math.sin(radians);
+                    
+                    ctx.fillStyle = '#0000bb'; // Blue text color
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(item.name, textX, textY);
                 });
             };
         }
